@@ -156,14 +156,11 @@ export const passwordSetter = async (req, res, next) => {
 
 export const logout = async (req, res, next) => {
   try {
-    const refreshToken = req.headers["x-refresh-token"]?.replace(
-      /^Bearer\s+/i,
-      ""
-    );
+    const refreshToken = req.headers["x-refresh-token"];
     if (!refreshToken)
       return next(new ErrorHandler("Please provide refresh token", 400));
 
-    await Session.deleteOne({ user: req.user._id, token: refreshToken });
+    await Session.deleteOne({ user: req.user._id, refreshToken });
 
     res
       .status(200)
@@ -183,19 +180,14 @@ export const logout = async (req, res, next) => {
 
 export const refreshJwt = async (req, res, next) => {
   try {
-    const refreshToken = req.headers["x-refresh-token"]?.replace(
-      /^Bearer\s+/i,
-      ""
-    );
+    const refreshToken = req.headers["x-refresh-token"];
     if (!refreshToken)
       return next(new ErrorHandler("Invalid Refresh Token", 401));
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET_REFRESH);
+    const decoded = jwt.decode(refreshToken, process.env.JWT_SECRET);
+    if (!decoded) return next(new ErrorHandler("Invalid Refresh Token", 401));
 
-    const session = await Session.findOne({
-      user: decoded._id,
-      token: refreshToken,
-    });
+    const session = Session.findOne({ user: decoded._id });
     if (!session) return next(new ErrorHandler("Invalid Refresh Token", 401));
 
     sendJwt(

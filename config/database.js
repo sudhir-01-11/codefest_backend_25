@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
 import { mongoUri } from "./constants.js";
 
-export const connectDB = async () => {
-  if (!mongoUri) {
-    throw new Error("MongoDB URI is not configured");
-  }
-
-  const connection = await mongoose.connect(mongoUri, { dbName: "codefest" });
-  console.log(`Database connected with ${connection.connection.host}`);
+export const connectDB = () => {
+  mongoose
+    .connect(mongoUri, { dbName: "codefest" })
+    .then((c) => {
+      console.log(`Database connected with ${c.connection.host}`);
+    })
+    .catch((err) => console.log(err));
 };

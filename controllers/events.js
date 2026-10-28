@@ -11,22 +11,7 @@ export const addEvent = async (req, res, next) => {
     }
 
     // eventDeadline in the format DD-MM-YYYY
-    let {
-      eventId,
-      maxMembers,
-      eventDeadline,
-      registrationsOpen = false,
-    } = req.body;
-
-    if (
-      !eventId ||
-      !Number.isInteger(Number(maxMembers)) ||
-      Number(maxMembers) < 1
-    ) {
-      return next(
-        new ErrorHandler("A valid event ID and member limit are required", 400)
-      );
-    }
+    let { eventId, maxMembers, eventDeadline } = req.body;
 
     if (await Events.findOne({ eventId })) {
       return next(new ErrorHandler("Event already exists", 400));
@@ -36,9 +21,8 @@ export const addEvent = async (req, res, next) => {
 
     const event = await Events.create({
       eventId,
-      maxMembers: Number(maxMembers),
+      maxMembers,
       eventDeadline,
-      registrations_open: Boolean(registrationsOpen),
     });
     res.status(201).json({
       success: true,
@@ -52,37 +36,32 @@ export const addEvent = async (req, res, next) => {
 export const isMember = async (req, res, next) => {
   try {
     const { eventId } = req.params;
-    const event = await Events.findOne({ eventId });
-    if (!event) return next(new ErrorHandler("Event Not Found", 404));
-    const memberDoc = await Members.findOne({
-      user: req.user._id,
-      event: event._id,
-    }).populate("team", "teamName");
+    const event = await Events.findOne({ eventId })
+    const memberDoc = await Members.findOne({ user: req.user._id, event: event._id }).populate("team", "teamName")
     if (memberDoc) {
       res.json({
         isMember: true,
         teamName: memberDoc.team.teamName,
-      });
+      })
     } else {
       res.json({
         isMember: false,
-      });
+      })
     }
   } catch (error) {
-    next(error);
+    next(error)
   }
-};
+}
 
 export const getEvent = async (req, res, next) => {
   try {
     const { eventId } = req.params;
-    const event = await Events.findOne({ eventId });
-    if (!event) return next(new ErrorHandler("Event Not Found", 404));
-    return res.status(200).json(event);
+    const event = await Events.findOne({ eventId })
+    return res.status(200).json(event)
   } catch (error) {
-    next(error);
+    next(error)
   }
-};
+}
 
 export const getTeams = async (req, res, next) => {
   try {
@@ -91,7 +70,6 @@ export const getTeams = async (req, res, next) => {
     }
     const { eventId } = req.params;
     const event = await Events.findOne({ eventId });
-    if (!event) return next(new ErrorHandler("Event Not Found", 404));
     const teams = await Team.aggregate([
       {
         $lookup: {
@@ -144,9 +122,7 @@ export const getTeams = async (req, res, next) => {
                     user: {
                       $arrayElemAt: [
                         "$userDetails",
-                        {
-                          $indexOfArray: ["$userDetails._id", "$$member.user"],
-                        },
+                        { $indexOfArray: ["$userDetails._id", "$$member.user"] },
                       ],
                     },
                   },
@@ -162,8 +138,9 @@ export const getTeams = async (req, res, next) => {
       },
     ]);
 
+
     res.status(200).json(teams);
   } catch (error) {
-    next(error);
+    next(error)
   }
-};
+}
