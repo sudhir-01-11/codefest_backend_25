@@ -18,6 +18,10 @@ export const joinTeam = async (req, res, next) => {
 
     const eventId = team.event;
     const event = await Events.findById(eventId);
+    if (!event) return next(new ErrorHandler("Event Not Found", 404));
+    if (!event.registrations_open) {
+      return next(new ErrorHandler("Registrations are currently closed", 400));
+    }
     const maxMembers = event.maxMembers;
     const currentDate = new Date();
     const eventDeadline = new Date(event.eventDeadline);

@@ -9,7 +9,15 @@ export const createTeam = async (req, res, next) => {
   try {
     let { teamName, eventId } = req.body;
     const event = await Events.findOne({ eventId });
+    if (!event) return next(new ErrorHandler("Event Not Found", 404));
+    if (typeof teamName !== "string" || !teamName.trim()) {
+      return next(new ErrorHandler("Team name is required", 400));
+    }
     teamName = teamName.trim();
+
+    if (!event.registrations_open) {
+      return next(new ErrorHandler("Registrations are currently closed", 400));
+    }
 
     if (await Team.findOne({ teamName, event: event._id })) {
       return next(new ErrorHandler("Teamname Already Exists", 400));
@@ -210,7 +218,14 @@ export const nameAvailable = async (req, res, next) => {
   try {
     const { name, eventId } = req.body;
     const event = await Events.findOne({ eventId });
-    const team = await Team.findOne({ teamName: name, event: event._id });
+    if (!event) return next(new ErrorHandler("Event Not Found", 404));
+    if (typeof name !== "string" || !name.trim()) {
+      return next(new ErrorHandler("Team name is required", 400));
+    }
+    const team = await Team.findOne({
+      teamName: name.trim(),
+      event: event._id,
+    });
     if (team) return res.status(200).json({ status: "failure" });
     else return res.status(200).json({ status: "success" });
   } catch (error) {
